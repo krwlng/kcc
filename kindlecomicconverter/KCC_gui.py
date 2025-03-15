@@ -17,8 +17,8 @@
 # TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 # PERFORMANCE OF THIS SOFTWARE.
 from PySide6.QtCore import (QSize, QUrl, Qt, Signal, QIODeviceBase, QEvent, QThread, QSettings)
-from PySide6.QtGui import (QColor, QIcon, QPixmap, QDesktopServices)
-from PySide6.QtWidgets import (QApplication, QLabel, QListWidgetItem, QMainWindow, QApplication, QSystemTrayIcon, QFileDialog, QMessageBox, QDialog)
+from PySide6.QtGui import (QColor, QIcon, QPixmap, QDesktopServices, QAction, QPalette, QActionGroup)
+from PySide6.QtWidgets import (QApplication, QLabel, QListWidgetItem, QMainWindow, QApplication, QSystemTrayIcon, QFileDialog, QMessageBox, QDialog, QProgressBar, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QTabWidget, QListWidget, QCheckBox, QSpinBox, QComboBox, QStyleFactory)
 from PySide6.QtNetwork import (QLocalSocket, QLocalServer)
 
 import os
@@ -36,6 +36,7 @@ from copy import copy
 from packaging.version import Version
 from raven import Client
 from tempfile import gettempdir
+from loguru import logger
 
 from .shared import HTMLStripper, available_archive_tools, sanitizeTrace, walkLevel, subprocess_run
 from . import __version__
@@ -44,6 +45,7 @@ from . import metadata
 from . import kindle
 from . import KCC_ui
 from . import KCC_ui_editor
+from .lang.language_manager import LanguageManager
 
 
 class QApplicationMessaging(QApplication):
@@ -769,7 +771,7 @@ class KCCGUI(KCC_ui.Ui_mainWindow):
     def saveSettings(self, event):
         if self.conversionAlive:
             GUI.convertButton.setEnabled(False)
-            self.addMessage('The process will be interrupted. Please wait.', 'warning')
+            self.addMessage(self.tr('The process will be interrupted. Please wait.'), 'warning')
             self.conversionAlive = False
             self.worker.sync()
             event.ignore()
@@ -781,6 +783,7 @@ class KCCGUI(KCC_ui.Ui_mainWindow):
         self.settings.setValue('currentFormat', GUI.formatBox.currentIndex())
         self.settings.setValue('startNumber', self.startNumber + 1)
         self.settings.setValue('windowSize', str(MW.size().width()) + 'x' + str(MW.size().height()))
+        self.settings.setValue('language', self.lang_manager.current_language)
         self.settings.setValue('options', {'mangaBox': GUI.mangaBox.checkState().value,
                                            'rotateBox': GUI.rotateBox.checkState().value,
                                            'qualityBox': GUI.qualityBox.checkState().value,
@@ -873,9 +876,29 @@ class KCCGUI(KCC_ui.Ui_mainWindow):
         APP = kccapp
         MW = kccwindow
         GUI = self
-        self.setupUi(MW)
-        self.editor = KCCGUI_MetaEditor()
+        
+        # Temel değişkenleri başlat
+        self.conversionAlive = False
+        self.needClean = True
+        self.kindleGen = False
+        self.gammaValue = 1.0
+        self.croppingPowerValue = 1.0
+        self.currentMode = 1
+        self.targetDirectory = ''
+        
+        # Icons nesnesini başlat
         self.icons = Icons()
+        
+        # Dil yöneticisini başlat
+        self.lang_manager = LanguageManager()
+        
+        # UI'yi kur
+        self.setupUi(MW)
+        
+        # System tray ikonunu başlat
+        self.tray = SystemTrayIcon()
+        
+        # Ayarları yükle
         self.settings = QSettings('ciromattia', 'kcc')
         self.settingsVersion = self.settings.value('settingsVersion', '', type=str)
         self.lastPath = self.settings.value('lastPath', '', type=str)
@@ -884,17 +907,22 @@ class KCCGUI(KCC_ui.Ui_mainWindow):
         self.startNumber = self.settings.value('startNumber', 0, type=int)
         self.windowSize = self.settings.value('windowSize', '0x0', type=str)
         self.options = self.settings.value('options', {'gammaSlider': 0, 'croppingBox': 2, 'croppingPowerSlider': 100})
+        
+        # Kaydedilmiş dil ayarını yükle (varsayılan: İngilizce)
+        saved_language = self.settings.value('language', 'en', type=str)
+        if saved_language:
+            self.lang_manager.set_language(saved_language)
+        
+        # Dil menüsünü oluştur
+        self.setup_language_menu()
+        
+        # Arayüzü çevir
+        self.retranslateUi()
+        
+        # Diğer başlangıç kodları devam eder
         self.worker = WorkerThread()
         self.versionCheck = VersionThread()
         self.progress = ProgressThread()
-        self.tray = SystemTrayIcon()
-        self.conversionAlive = False
-        self.needClean = True
-        self.kindleGen = False
-        self.gammaValue = 1.0
-        self.croppingPowerValue = 1.0
-        self.currentMode = 1
-        self.targetDirectory = ''
         self.sentry = Client(release=__version__)
         if sys.platform.startswith('win'):
             # noinspection PyUnresolvedReferences
@@ -1163,6 +1191,107 @@ class KCCGUI(KCC_ui.Ui_mainWindow):
         MW.show()
         MW.raise_()
 
+    def setup_language_menu(self):
+        """Dil menüsünü oluşturur"""
+        # Ayarlar menüsünü bul veya oluştur
+        settings_menu = None
+        for action in MW.menuBar().actions():
+            if action.text() == "Settings":
+                settings_menu = action.menu()
+                break
+        
+        if not settings_menu:
+            settings_menu = MW.menuBar().addMenu("Settings")
+        
+        # Dil alt menüsü
+        language_menu = settings_menu.addMenu(self.tr("Language"))
+        language_group = QActionGroup(language_menu)
+        
+        # Dilleri ekle
+        for lang_code, lang_name in self.lang_manager.get_available_languages().items():
+            action = QAction(lang_name, language_menu, checkable=True)
+            action.setData(lang_code)
+            if lang_code == self.lang_manager.current_language:
+                action.setChecked(True)
+            language_group.addAction(action)
+            language_menu.addAction(action)
+        
+        language_group.triggered.connect(self.change_language)
+    
+    def change_language(self, action):
+        """Dili değiştirir ve arayüzü günceller"""
+        lang_code = action.data()
+        if self.lang_manager.set_language(lang_code):
+            self.retranslateUi()
+            # Ayarları kaydet
+            self.settings.setValue('language', lang_code)
+            # Pencere başlığını güncelle
+            if lang_code == "tr":
+                MW.setWindowTitle("Kindle Çizgi Roman Dönüştürücü " + __version__)
+            else:
+                MW.setWindowTitle("Kindle Comic Converter " + __version__)
+    
+    def retranslateUi(self, mainWindow=None):
+        """Arayüz metinlerini seçili dile göre günceller"""
+        if mainWindow:
+            super().retranslateUi(mainWindow)
+        
+        # Butonlar
+        self.directoryButton.setText(self.tr("Select Directory"))
+        self.fileButton.setText(self.tr("Select File"))
+        self.clearButton.setText(self.tr("Clear List"))
+        self.editorButton.setText(self.tr("Editor"))
+        self.wikiButton.setText(self.tr("Wiki"))
+        self.convertButton.setText(self.tr("Convert") if not self.conversionAlive else self.tr("Abort"))
+        
+        # Seçenekler
+        self.mangaBox.setText(self.tr("Manga mode"))
+        self.webtoonBox.setText(self.tr("Webtoon mode"))
+        self.rotateBox.setText(self.tr("Rotate images"))
+        self.qualityBox.setText(self.tr("Quality"))
+        self.gammaBox.setText(self.tr("Gamma"))
+        self.croppingBox.setText(self.tr("Cropping"))
+        self.deleteBox.setText(self.tr("Delete source"))
+        self.outputSplit.setText(self.tr("Output split"))
+        self.upscaleBox.setText(self.tr("Upscale images"))
+        self.colorBox.setText(self.tr("Color mode"))
+        self.disableProcessingBox.setText(self.tr("Disable processing"))
+        
+        # Format ve cihaz etiketleri
+        self.deviceBox.setItemText(0, self.tr("Device profiles"))
+        self.formatBox.setItemText(0, self.tr("Output format"))
+        
+        # Menü öğeleri
+        for action in MW.menuBar().actions():
+            action.setText(self.tr(action.text()))
+            if action.menu():
+                for subAction in action.menu().actions():
+                    subAction.setText(self.tr(subAction.text()))
+    
+    def tr(self, text):
+        """Metni çevirir"""
+        return self.lang_manager.get_text(text)
+    
+    def loadSettings(self):
+        """Ayarları yükler"""
+        # Mevcut ayarları yükle
+        # ... existing code ...
+        
+        # Dil ayarını yükle
+        saved_language = self.settings.value('language', 'en', type=str)
+        self.lang_manager.set_language(saved_language)
+        
+    def saveSettings(self, event):
+        """Ayarları kaydeder"""
+        # Mevcut ayarları kaydet
+        # ... existing code ...
+        
+        # Dil ayarını kaydet
+        self.settings.setValue('language', self.lang_manager.current_language)
+        
+        self.settings.sync()
+        self.tray.hide()
+
 
 class KCCGUI_MetaEditor(KCC_ui_editor.Ui_editorDialog):
     def loadData(self, file):
@@ -1208,7 +1337,6 @@ class KCCGUI_MetaEditor(KCC_ui_editor.Ui_editorDialog):
                 GUI.sentry.captureException()
                 GUI.showDialog("Failed to save metadata!\n\n%s\n\nTraceback:\n%s"
                                % (str(err), sanitizeTrace(traceback)), 'error')
-            self.ui.close()
 
     def cleanData(self, s):
         return escape(s.strip())

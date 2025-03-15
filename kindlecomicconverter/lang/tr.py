@@ -1,0 +1,152 @@
+# -*- coding: utf-8 -*-
+
+translations = {
+    # Ana pencere başlığı
+    "Kindle Comic Converter": "Kindle Çizgi Roman Dönüştürücü",
+    
+    # Menü öğeleri
+    "File": "Dosya",
+    "Settings": "Ayarlar",
+    "Help": "Yardım",
+    "About": "Hakkında",
+    "Exit": "Çıkış",
+    "Language": "Dil",
+    
+    # Butonlar
+    "Convert": "Dönüştür",
+    "Abort": "İptal",
+    "Select File": "Dosya Seç",
+    "Select Directory": "Klasör Seç",
+    "Clear List": "Listeyi Temizle",
+    "Editor": "Düzenleyici",
+    "Wiki": "Wiki",
+    
+    # Seçenekler
+    "Manga mode": "Manga modu",
+    "Webtoon mode": "Webtoon modu",
+    "Rotate images": "Görüntüleri döndür",
+    "Quality": "Kalite",
+    "Gamma": "Gamma",
+    "Cropping": "Kırpma",
+    "Delete source": "Kaynağı sil",
+    "Output split": "Çıktıyı böl",
+    "Upscale images": "Görüntüleri büyüt",
+    "Color mode": "Renk modu",
+    "Disable processing": "İşlemeyi devre dışı bırak",
+    "Stretch images": "Görüntüleri genişlet",
+    "Spread shift": "Sayfa kaydırma",
+    "No rotate": "Döndürme yok",
+    "Inter-panel crop": "Panel arası kırpma",
+    "Reduce Rainbow": "Gökkuşağı efektini azalt",
+    "Default Author": "Varsayılan Yazar",
+    "1x4 to 2x2 strips": "1x4'ten 2x2 şeritlere",
+    "Maximize strips": "Şeritleri maksimize et",
+    "Force PNG": "PNG'ye zorla",
+    "Use MozJPEG": "MozJPEG kullan",
+    "Border": "Kenarlık",
+    "White borders": "Beyaz kenarlıklar",
+    "Black borders": "Siyah kenarlıklar",
+    "Custom width": "Özel genişlik",
+    "Custom height": "Özel yükseklik",
+    
+    # Cihaz profilleri
+    "Device profiles": "Cihaz profilleri",
+    "Kindle": "Kindle",
+    "Kobo": "Kobo",
+    "Other": "Diğer",
+    
+    # Format seçenekleri
+    "Output format": "Çıktı formatı",
+    "MOBI": "MOBI",
+    "EPUB": "EPUB",
+    "CBZ": "CBZ",
+    "MOBI/AZW3": "MOBI/AZW3",
+    "EPUB (Calibre KFX)": "EPUB (Calibre KFX)",
+    "MOBI + EPUB": "MOBI + EPUB",
+    "EPUB (200MB limit)": "EPUB (200MB limit)",
+    "MOBI + EPUB (200MB limit)": "MOBI + EPUB (200MB limit)",
+    
+    # Metadata düzenleyici
+    "Series": "Seri",
+    "Volume": "Cilt",
+    "Number": "Sayı",
+    "Writer": "Yazar",
+    "Pencillers": "Çizer",
+    "Inker": "Mürekkepçi",
+    "Colorist": "Renklendirici",
+    
+    # Mesajlar
+    "No files selected!": "Hiç dosya seçilmedi!",
+    "Please choose files to convert.": "Lütfen dönüştürülecek dosyaları seçin.",
+    "Converting...": "Dönüştürülüyor...",
+    "Conversion completed!": "Dönüştürme tamamlandı!",
+    "Error during conversion!": "Dönüştürme sırasında hata!",
+    "The process will be interrupted. Please wait.": "İşlem kesintiye uğrayacak. Lütfen bekleyin.",
+    "All jobs completed.": "Tüm işler tamamlandı.",
+    "Editor is disabled due to a lack of 7z.": "7z eksik olduğu için düzenleyici devre dışı.",
+    "Welcome!": "Hoş geldiniz!",
+    "Remember:": "Unutmayın:",
+    "All options have additional information in tooltips.": "Tüm seçeneklerin araç ipuçlarında ek bilgiler bulunmaktadır.",
+    "Since you are a new user of": "KCC'nin yeni bir kullanıcısı olduğunuz için",
+    "please see few important tips": "lütfen bazı önemli ipuçlarına göz atın",
+    "Install 7z (link)": "7z'yi yükleyin (bağlantı)",
+    "to enable CBZ/CBR/ZIP/etc processing.": "CBZ/CBR/ZIP vb. işlemeyi etkinleştirmek için.",
+    "Install KindleGen (link)": "KindleGen'i yükleyin (bağlantı)",
+    "to enable MOBI conversion for Kindles!": "Kindle'lar için MOBI dönüşümünü etkinleştirmek için!",
+    "List of supported Non-Kindle devices.": "Desteklenen Kindle olmayan cihazların listesi.",
+    "This option is intended for older Kindle models.": "Bu seçenek eski Kindle modelleri içindir.",
+    "On this device, quality improvement will be negligible.": "Bu cihazda kalite iyileştirmesi önemsiz olacaktır.",
+    "Creating CBZ files": "CBZ dosyaları oluşturuluyor",
+    "Creating EPUB files": "EPUB dosyaları oluşturuluyor",
+    "Creating MOBI files": "MOBI dosyaları oluşturuluyor",
+    "Processing MOBI files": "MOBI dosyaları işleniyor",
+    "Failed to process MOBI file!": "MOBI dosyası işlenemedi!",
+    "KindleGen failed to create MOBI!": "KindleGen MOBI oluşturamadı!",
+    "Created EPUB file was too big.": "Oluşturulan EPUB dosyası çok büyük.",
+    "EPUB file:": "EPUB dosyası:",
+    "Supported size:": "Desteklenen boyut:",
+    "Kindle detected. Uploading covers...": "Kindle algılandı. Kapaklar yükleniyor...",
+    "Done!": "Tamamlandı!",
+    
+    # Araç ipuçları
+    "Select input file": "Girdi dosyasını seç",
+    "Select input directory": "Girdi klasörünü seç",
+    "Clear job list": "İş listesini temizle",
+    "Open metadata editor": "Metadata düzenleyiciyi aç",
+    "Open wiki page": "Wiki sayfasını aç",
+    "Source:": "Kaynak:",
+    
+    # Durum çubuğu
+    "Ready": "Hazır",
+    "Processing": "İşleniyor",
+    "Completed": "Tamamlandı",
+    "Error": "Hata",
+    
+    # Uyarılar
+    "Warning": "Uyarı",
+    "Info": "Bilgi",
+    "Error": "Hata",
+    "KindleGen error:": "KindleGen hatası:",
+    "Traceback:": "Hata izleme:",
+    
+    # Diğer
+    "Language": "Dil",
+    "English": "İngilizce",
+    "Turkish": "Türkçe",
+    "HOMEPAGE": "ANA SAYFA",
+    "DONATE": "BAĞIŞ YAP",
+    "FORUM": "FORUM",
+    
+    # Hata mesajları
+    "Failed to parse metadata!": "Metadata ayrıştırılamadı!",
+    "Failed to save metadata!": "Metadata kaydedilemedi!",
+    "must be a number.": "sayı olmalıdır.",
+    "CBR metadata are read-only.": "CBR metadata salt okunurdur.",
+    "Separate authors with a comma.": "Yazarları virgülle ayırın.",
+    "Target resolution is not set!": "Hedef çözünürlük ayarlanmadı!",
+    "Unsupported file type for": "Desteklenmeyen dosya türü:",
+    "Your KindleGen is outdated! MOBI conversion might fail.": "KindleGen'iniz güncel değil! MOBI dönüşümü başarısız olabilir.",
+    "pillow-heif is not installed. HEIF/HEIC support will be disabled.": "pillow-heif yüklü değil. HEIF/HEIC desteği devre dışı bırakılacak.",
+    "No archive tools found. Please install at least one of: tar, 7z, unar, or unrar": "Arşiv aracı bulunamadı. Lütfen en az birini yükleyin: tar, 7z, unar veya unrar",
+    "Available archive tools:": "Kullanılabilir arşiv araçları:",
+} 

@@ -82,13 +82,40 @@ def modify_path():
             os.environ['PATH'] += os.pathsep + os.pathsep.join(win_paths)
             os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+# Modül yolunu ekle
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from multiprocessing import freeze_support, set_start_method
-from kindlecomicconverter.startup import start
+from multiprocessing import freeze_support
+from PySide6.QtWidgets import QApplication
+from kindlecomicconverter.shared import dependencyCheck, setup_logging
+from kindlecomicconverter.KCC_gui import KCCGUI, QMainWindowKCC, QApplicationMessaging
+from loguru import logger
 
 if __name__ == "__main__":
     modify_path()
-    set_start_method('spawn')
     freeze_support()
-    start()
+    
+    # Loglama sistemini başlat
+    setup_logging()
+    
+    # Bağımlılıkları kontrol et
+    dependencyCheck(3)
+    
+    # Qt uygulamasını başlat
+    app = QApplicationMessaging(sys.argv)
+    app.setApplicationName("Kindle Comic Converter")
+    app.setOrganizationName("KCC")
+    
+    # Eğer başka bir örnek çalışıyorsa
+    if app.isRunning():
+        app.sendMessage(os.path.join(os.getcwd(), sys.argv[-1]) if len(sys.argv) > 1 else 'ARISE')
+        sys.exit(0)
+    
+    # Ana pencereyi oluştur
+    mw = QMainWindowKCC()
+    # GUI'yi başlat
+    KCC = KCCGUI(app, mw)
+    
+    # Uygulamayı çalıştır
+    sys.exit(app.exec_())
 

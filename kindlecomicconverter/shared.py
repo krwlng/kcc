@@ -27,7 +27,28 @@ from packaging.version import Version
 from re import split
 import sys
 from traceback import format_tb
+from loguru import logger
+import datetime
 
+# Loglama sistemini yapılandır
+def setup_logging():
+    log_path = os.path.join(os.path.expanduser("~"), ".kcc", "logs")
+    os.makedirs(log_path, exist_ok=True)
+    
+    # Log dosya adını tarih ve saat ile oluştur
+    log_file = os.path.join(log_path, f"kcc_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+    
+    # Konsol ve dosya loglamasını yapılandır
+    logger.remove()  # Varsayılan handler'ı kaldır
+    
+    # Konsol için renkli ve detaylı loglama
+    logger.add(sys.stderr, format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>", level="INFO")
+    
+    # Dosya için detaylı loglama
+    logger.add(log_file, format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}", level="DEBUG", rotation="100 MB", retention="30 days")
+
+# Uygulama başlangıcında loglama sistemini başlat
+setup_logging()
 
 class HTMLStripper(HTMLParser):
     def __init__(self):
@@ -48,14 +69,18 @@ class HTMLStripper(HTMLParser):
 
 
 def getImageFileName(imgfile):
+    logger.debug(f"Checking image file: {imgfile}")
     name, ext = os.path.splitext(imgfile)
     ext = ext.lower()
-    if (name.startswith('.') and len(name) == 1) or ext not in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.jp2', '.j2k', '.jpx']:
+    if (name.startswith('.') and len(name) == 1) or ext not in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.jp2', '.j2k', '.jpx', '.heic', '.heif']:
+        logger.warning(f"Unsupported or invalid image format: {ext}")
         return None
+    logger.debug(f"Valid image file found: {name}{ext}")
     return [name, ext]
 
 
 def walkSort(dirnames, filenames):
+    logger.debug(f"Sorting {len(dirnames)} directories and {len(filenames)} files")
     convert = lambda text: int(text) if text.isdigit() else text
     alphanum_key = lambda key: [convert(c) for c in split('([0-9]+)', key)]
     dirnames.sort(key=lambda name: alphanum_key(name.lower()))
@@ -118,30 +143,83 @@ def dependencyCheck(level):
                 missing.append('python-slugify 1.2.1+')
         except ImportError:
             missing.append('python-slugify 1.2.1+')
+    
+    # Temel görüntü işleme kütüphaneleri
     try:
         from PIL import __version__ as pillowVersion
         if Version('5.2.0') > Version(pillowVersion):
             missing.append('Pillow 5.2.0+')
     except ImportError:
         missing.append('Pillow 5.2.0+')
+    
+    # HEIF desteği kontrolü
+    try:
+        import pillow_heif
+    except ImportError:
+        print('WARNING: pillow-heif is not installed. HEIF/HEIC support will be disabled.')
+    
+    # Numpy kontrolü
+    try:
+        import numpy
+        if Version('1.22.4') > Version(numpy.__version__):
+            missing.append('numpy 1.22.4+')
+    except ImportError:
+        missing.append('numpy 1.22.4+')
+
     if len(missing) > 0:
         print('ERROR: ' + ', '.join(missing) + ' is not installed!')
         sys.exit(1)
+    
+    # Arşiv araçlarını kontrol et
+    available_archive_tools()
 
 @lru_cache
 def available_archive_tools():
+    logger.debug("Checking available archive tools")
     available = []
+    tool_versions = {}
+    
+    tools = {
+        'tar': ['tar', '--version'],
+        '7z': ['7z', '--help'],
+        'unar': ['unar', '--version'],
+        'unrar': ['unrar', '--version']
+    }
 
-    for tool in ['tar', '7z', 'unar', 'unrar']:
+    for tool, command in tools.items():
         try:
-            subprocess_run([tool], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            available.append(tool)
+            logger.debug(f"Checking {tool} availability")
+            result = subprocess_run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            if result.returncode == 0:
+                available.append(tool)
+                output = result.stdout.decode('utf-8', errors='ignore')
+                tool_versions[tool] = output.split('\n')[0] if output else 'Version unknown'
+                logger.info(f"Found {tool}: {tool_versions[tool]}")
         except FileNotFoundError:
-            pass
+            logger.warning(f"{tool} not found in system PATH")
+    
+    if not available:
+        logger.error("No archive tools found!")
+        print('WARNING: No archive tools found. Please install at least one of: tar, 7z, unar, or unrar')
+    else:
+        print('Available archive tools:')
+        for tool in available:
+            print(f'- {tool}: {tool_versions.get(tool, "Version unknown")}')
     
     return available
 
 def subprocess_run(command, **kwargs):
-    if (os.name == 'nt'):
+    logger.debug(f"Running command: {command}")
+    if os.name == 'nt':
         kwargs.setdefault('creationflags', subprocess.CREATE_NO_WINDOW)
-    return subprocess.run(command, **kwargs)
+    try:
+        result = subprocess.run(command, timeout=30, **kwargs)
+        logger.debug(f"Command completed with return code: {result.returncode}")
+        return result
+    except subprocess.TimeoutExpired:
+        logger.error(f"Command timed out after 30 seconds: {command}")
+        print(f'WARNING: Command {command} timed out after 30 seconds')
+        return subprocess.CompletedProcess(command, -1)
+    except Exception as e:
+        logger.error(f"Error running command {command}: {str(e)}")
+        raise
