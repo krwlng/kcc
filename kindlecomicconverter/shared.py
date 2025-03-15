@@ -32,20 +32,38 @@ import datetime
 
 # Loglama sistemini yapılandır
 def setup_logging():
-    log_path = os.path.join(os.path.expanduser("~"), ".kcc", "logs")
-    os.makedirs(log_path, exist_ok=True)
-    
-    # Log dosya adını tarih ve saat ile oluştur
-    log_file = os.path.join(log_path, f"kcc_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
-    
-    # Konsol ve dosya loglamasını yapılandır
-    logger.remove()  # Varsayılan handler'ı kaldır
-    
-    # Konsol için renkli ve detaylı loglama
-    logger.add(sys.stderr, format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>", level="INFO")
-    
-    # Dosya için detaylı loglama
-    logger.add(log_file, format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}", level="DEBUG", rotation="100 MB", retention="30 days")
+    try:
+        log_path = os.path.join(os.path.expanduser("~"), ".kcc", "logs")
+        os.makedirs(log_path, exist_ok=True)
+        
+        # Log dosya adını tarih ve saat ile oluştur
+        log_file = os.path.join(log_path, f"kcc_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+        
+        # Konsol ve dosya loglamasını yapılandır
+        logger.remove()  # Varsayılan handler'ı kaldır
+        
+        # PyInstaller ile oluşturulan exe için özel loglama yapılandırması
+        if getattr(sys, 'frozen', False):
+            # Sadece dosya loglaması yap
+            logger.add(log_file, 
+                      format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
+                      level="DEBUG",
+                      rotation="100 MB",
+                      retention="30 days")
+        else:
+            # Normal modda hem konsol hem dosya loglaması yap
+            logger.add(sys.stderr,
+                      format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+                      level="INFO")
+            logger.add(log_file,
+                      format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
+                      level="DEBUG",
+                      rotation="100 MB",
+                      retention="30 days")
+    except Exception as e:
+        print(f"Loglama sistemi başlatılamadı: {str(e)}")
+        # Minimum loglama yapılandırması
+        logger.add(lambda msg: print(msg), level="INFO")
 
 # Uygulama başlangıcında loglama sistemini başlat
 setup_logging()
